@@ -4,30 +4,46 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <array>
+#include <queue>
 
 using namespace std;
 
-#define INF numeric_limits<double>::infinity()
+#define INF 100000
 
 
-vector<vector<double>> readData(string fname);
-vector<int> dijkstra(int start, vector<vector<double>> adj);
+vector<vector<array<int,2>>> readData(string fname);
+vector<int> dijkstra(int start, vector<vector<array<int,2>>> adj);
 
 int main() {
-    readData("routes.csv");
+    vector<vector<array<int,2>>> adj_list = readData("routes.csv");
+    vector<int> dist = dijkstra(0, adj_list);
+
+    assert(dist[0]==0);
+    cout << "Test Case #1 passed\n";
+ 
+    assert(dist[1]==1);
+    cout << "Test Case #2 passed\n";
+
+    assert(dist[3]==2);
+    cout << "Test Case #3 passed\n";
+
+    assert(dist[13]==1);
+    cout << "Test Case #4 passed\n";
+
     return 0;
 }
 
 
-
-vector<vector<double>> readData(string fname) {
+vector<vector<array<int,2>>>  readData(string fname) {
     fstream fin;
-    vector<vector<string>> rows; 
+    vector<vector<string>> rows；
     string line, word;
-    vector<vector<double>> adj;
+    vector<vector<array<int,2>>>  adj;
 
 
     fin.open("routes.csv", ios::in);
+
     map<string, int> m;
 
     int idx = 0;
@@ -37,12 +53,6 @@ vector<vector<double>> readData(string fname) {
         while(getline(str, word, ',')) {
             row.push_back(word);
         }
-        // used for print out the content of a vector 
-        // for (int i = 0; i < row.size(); i++) {
-        //     cout << row[i] << " ";
-        // }
-        // cout << endl;
-
         if (m.find(row[2]) == m.end()) {
             m[row[2]] = idx++;
         }
@@ -52,47 +62,40 @@ vector<vector<double>> readData(string fname) {
         rows.push_back(row);
     }
 
-    cout << "building adjacency matrix with " << idx << " different nodes" << endl;
-    for(int i=0; i<m.size(); i++) {
-        vector<double> adj_row;
-        for(int j=0; j<m.size(); j++) {
-            if (i==j) {
-                adj_row.push_back(0);
-            } else {
-                adj_row.push_back(INF);
-            }
-        }
+    cout << "building adjacency list with " << idx << " different nodes" << endl;
+
+    for(int i=0; i<idx; i++) {
+        vector<array<int,2>> adj_row;
         adj.push_back(adj_row);
     }
-
     for(int i=0; i<rows.size(); i++) {
         vector<string> row_array = rows[i];
         int a = m[row_array[2]];
         int b = m[row_array[4]];
-        adj[a][b] = 1;
-        adj[b][a] = 1;
+        adj[a].push_back({1,b});
+        adj[b].push_back({1,a});
     }
-
-    // used for print out the content of a whole map
-    // for (const auto& [key, value] : m)
-    //         std::cout << '[' << key << "] = " << value << "; ";
     return adj;
 
 }
 
 
-// vector<int> dijkstra(int start, vector<vector<double>> adj) {
-//     int dist[adj.size()];
-//     fill(begin(dist), end(dist), INF);
-//     priority_queue<array<int, 2>, vector<array<int,2>>, greater<array<int, 2>>> pq;
-//     pq.push({0, start});
-//     while (!pq.empty()) {
-//         auto t = pq.top();
-//         pq.pop();
-//         if (dist[t[1]] <= t[0])
-//             continue;
-//         dist[t[1]] = t[0];
-//         for (auto i : adj[t[1]])
-//             pq.push({t[0] + i[0], i[1]});
-//     }
-// }
+vector<int> dijkstra(int start, vector<vector<array<int,2>>> adj_list) {
+    vector<int> dist;
+    for(int i=0; i<adj_list.size(); i++) {
+        dist.push_back(INF);
+    }
+
+    priority_queue<array<int, 2>, vector<array<int,2>>, greater<array<int, 2>>> pq;
+    pq.push({0, start});
+    while (!pq.empty()) {
+        auto t = pq.top();
+        pq.pop();
+        if (dist[t[1]] <= t[0])
+            continue;
+        dist[t[1]] = t[0];
+        for (auto neighbor : adj_list[t[1]])
+            pq.push({t[0] + neighbor[0], neighbor[1]});
+    }
+    return dist;
+}
